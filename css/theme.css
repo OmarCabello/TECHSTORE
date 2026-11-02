@@ -1,0 +1,92 @@
+/* ===== Interruptor (como en la imagen) ===== */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin-right: 8px;
+  cursor: pointer;
+  color: var(--ink);
+  font: 600 13px "Poppins", Arial, sans-serif;
+  white-space: nowrap;
+}
+
+.theme-track {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  border-radius: 999px;
+  border: 3px solid #111;
+  background: #fff;
+  transition: background 0.3s ease, border-color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.theme-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #111;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.theme-toggle:focus-visible .theme-track {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+@media (max-width: 680px) {
+  .theme-label { display: none; }
+}
+
+/* ===== Modo oscuro ===== */
+:root[data-theme="dark"] {
+  --header: #14161c;
+  --header-line: #33c7f3;
+  --ink: #e8eaf0;
+  --muted: #aab0c0;
+  --footer: #05070f;
+  --hero: #5aaeff;
+  --hero-dark: #7cc4ff;
+  --hero-light: #143f75;
+  --hero-mid: #0f3160;
+  --hero-deep: #0a2247;
+  --card-top: #1a4577;
+  --card-bottom: #0b2a52;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="dark"] body { background: #0f1117; }
+:root[data-theme="dark"] .page { background: #0f1117; }
+:root[data-theme="dark"] .card { background: #1a1d26; }
+:root[data-theme="dark"] .nav-link { color: #dfe3ee; }
+:root[data-theme="dark"] .nav-link:hover { color: var(--cyan); }
+:root[data-theme="dark"] .icon-btn { color: #fff; }
+:root[data-theme="dark"] .menu-btn span { background: #fff; }
+:root[data-theme="dark"] .search { background: #1a1d26; border-color: #3a3f4d; }
+:root[data-theme="dark"] .search input { color: #e8eaf0; }
+:root[data-theme="dark"] .contact-list { color: #cfd3df; }
+:root[data-theme="dark"] .contact-form input,
+:root[data-theme="dark"] .contact-form textarea {
+  background: #1a1d26;
+  border-color: #3a3f4d;
+  color: #e8eaf0;
+}
+:root[data-theme="dark"] .drawer-panel { background: #14161c; color: #e8eaf0; }
+:root[data-theme="dark"] .cart-line { border-bottom-color: #2a2e3a; }
+:root[data-theme="dark"] .form-ok { color: #3dff8a; }
+
+/* Interruptor en modo oscuro */
+:root[data-theme="dark"] .theme-track {
+  background: #2a2d35;
+  border-color: #fff;
+}
+:root[data-theme="dark"] .theme-knob {
+  background: #fff;
+  transform: translateX(22px);
+}
