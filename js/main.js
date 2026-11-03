@@ -1,13 +1,13 @@
 const products = [
   { id: "rgb-headset", name: "Audífonos RGB ", price: 129.9, offer: false, img: "assets/headphones.webp" },
-  { id: "headset-pro", name: "Audífonos Tech Pro", price: 159.9, offer: true, old: 199.9, img: "assets/headphones.webp" },
-  { id: "headset-lite", name: "Audífonos Lite", price: 89.9, offer: false, img: "assets/headphones.webp" },
+  { id: "headset-pro", name: "Audífonos Tech Pro", price: 159.9, offer: true, old: 199.9, img: "assets/Audífonos Tech Pro.webp" },
+  { id: "headset-lite", name: "Audífonos Lite", price: 89.9, offer: false, img: "assets/Audífonos Lite.webp" },
   { id: "rgb-headset", name: "Audífonos RGB ", price: 129.9, offer: false, img: "assets/headphones.webp" },
-  { id: "headset-gamer", name: "Headset Gamer X", price: 149.9, offer: true, old: 189.9, img: "assets/headphones.webp" },
-  { id: "headset-studio", name: "Audífonos Studio", price: 179.9, offer: false, img: "assets/headphones.webp" },
-  { id: "headset-studio", name: "Studio", price: 179.9, offer: false, img: "assets/headphones.webp" },
+  { id: "headset-gamer", name: "Headset Gamer X", price: 149.9, offer: true, old: 189.9, img: "assets/Headset Gamer X.webp" },
+  { id: "headset-studio", name: "Audífonos Studio", price: 179.9, offer: false, img: "assets/Audífonos Studio.webp" },
+  { id: "headset-studio", name: "Studio", price: 179.9, offer: false, img: "assets/Audífonos Studio.webp" },
   { id: "headset-pro", name: "Audífonos Tech Pro", price: 159.9, offer: true, old: 199.9, img: "assets/headphones.webp" },
-  { id: "headset-kids", name: "Audífonos Go", price: 69.9, offer: true, old: 99.9, img: "assets/headphones.webp" }
+  { id: "headset-kids", name: "Audífonos Go", price: 69.9, offer: true, old: 99.9, img: "assets/Audífonos Go.webp" }
 ];
 
 const page = location.pathname.split("/").pop() || "index.html";
