@@ -119,13 +119,37 @@ const drawersHTML = `
       <h2>Cuenta</h2>
       <button class="icon-btn" id="close-account" aria-label="Cerrar cuenta">×</button>
     </div>
-    <form class="contact-form" id="login-form">
-      <label>Correo <input type="email" required /></label>
-      <label>Contraseña <input type="password" required /></label>
-      <button type="submit" class="btn-buy">Ingresar</button>
-      <p class="form-ok" id="login-ok" hidden>Sesión iniciada.</p>
-    </form>
-  </div>
+    
+<form class="contact-form" id="login-form">
+
+  <label for="login-email">Correo</label>
+
+  <input
+    type="email"
+    id="login-email"
+    name="email"
+    placeholder="Ingresa tu correo"
+    required
+  />
+
+  <label for="login-password">Contraseña</label>
+
+  <input
+    type="password"
+    id="login-password"
+    name="password"
+    placeholder="Ingresa tu contraseña"
+    required
+  />
+
+  <button type="submit" class="btn-buy">
+    Ingresar
+  </button>
+
+  <p class="form-ok" id="login-ok" hidden></p>
+
+</form>
+
 </aside>`;
 
 document.getElementById("site-header").outerHTML = headerHTML;
@@ -248,19 +272,6 @@ document.getElementById("checkout-btn").addEventListener("click", () => {
   toggleDrawer("cart-drawer", false);
 });
 
-const contactForm = document.getElementById("contact-form");
-if (contactForm) {
-  contactForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    document.getElementById("contact-ok").hidden = false;
-    e.target.reset();
-  });
-}
-
-document.getElementById("login-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  document.getElementById("login-ok").hidden = false;
-});
 
 const menuBtn = document.getElementById("menu-btn");
 const nav = document.getElementById("main-nav");
