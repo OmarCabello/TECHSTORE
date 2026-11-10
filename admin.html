@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrativo | TECHSTORE</title>
+
+    <link rel="stylesheet" href="css/styles.css">
+
+    <style>
+        .admin-panel {
+            padding: 35px 20px;
+            min-height: 80vh;
+        }
+
+        .admin-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .messages-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .messages-table th,
+        .messages-table td {
+            padding: 14px;
+            border: 1px solid #ddd;
+            text-align: left;
+            color: #222;
+        }
+
+        .messages-table th {
+            background: #16b5df;
+            color: white;
+        }
+
+        .btn-logout {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 25px;
+            background: #16b5df;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #admin-status {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="page admin-panel">
+        <div class="container">
+
+            <div class="admin-heading">
+                <div>
+                    <h1>Panel de administración</h1>
+                    <p>Bienvenido a TECHSTORE</p>
+                </div>
+
+                <button id="logout-btn" class="btn-logout">
+                    Cerrar sesión
+                </button>
+            </div>
+
+            <h2>Mensajes recibidos</h2>
+            <p>Registro de mensajes enviados por nuestros clientes.</p>
+
+            <p id="admin-status">Cargando mensajes...</p>
+
+            <div class="table-container">
+                <table class="messages-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Mensaje</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="messages-body"></tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+
+    <script type="module" src="js/admin.js"></script>
+    <script type="module" src="js/admin.js"></script>
+
+</body>
+</html>
