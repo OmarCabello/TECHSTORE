@@ -51,7 +51,7 @@ async function cargarPedidos() {
     const { data, error } = await supabase
         .from("pedidos")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("id", { ascending: false });
 
     if (error) {
         console.error("Error al cargar pedidos:", error);
