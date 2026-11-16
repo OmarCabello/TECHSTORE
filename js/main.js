@@ -253,7 +253,7 @@ const footerHTML = `
 </footer>`;
 
 // ==========================================
-// 5. VENTANAS LATERALES
+// 5. VENTANAS LATERALES Y MODAL DE PAGO
 // ==========================================
 
 const drawersHTML = `
@@ -336,7 +336,45 @@ const drawersHTML = `
         </form>
 
     </div>
-</aside>`;
+</aside>
+
+<!-- MODAL DE MÉTODOS DE PAGO -->
+<div class="pay-modal" id="payment-modal" aria-hidden="true">
+    <div class="pay-modal-box">
+        <div class="pay-modal-head">
+            <h3>Completa tu pago</h3>
+            <button type="button" class="icon-btn" id="close-payment" aria-label="Cerrar">×</button>
+        </div>
+
+        <div class="pay-summary">
+            <span>Total a pagar:</span>
+            <strong id="pay-modal-total">S/ 0.00</strong>
+        </div>
+
+        <p class="pay-label">1. Selecciona tu método de pago:</p>
+        <div class="pay-tabs">
+            <button type="button" class="pay-tab active" data-method="Yape">Yape</button>
+            <button type="button" class="pay-tab" data-method="Plin">Plin</button>
+            <button type="button" class="pay-tab" data-method="Transferencia Bancaria">Transferencia</button>
+        </div>
+
+        <div class="pay-info-card" id="pay-method-details">
+            <!-- Se llena dinámicamente según el método elegido -->
+        </div>
+
+        <form id="payment-form" class="pay-form">
+            <label for="pay-email">2. Tu correo electrónico (obligatorio) *</label>
+            <input type="email" id="pay-email" placeholder="ejemplo@correo.com" required />
+
+            <label for="pay-operation">3. N° de operación / referencia (opcional)</label>
+            <input type="text" id="pay-operation" placeholder="Ej: 00458921" />
+
+            <button type="submit" class="btn-buy" id="confirm-pay-btn">
+                Confirmar pedido
+            </button>
+        </form>
+    </div>
+</div>`;
 
 // ==========================================
 // 6. INSERTAR ELEMENTOS EN LA PÁGINA
@@ -671,49 +709,153 @@ if (accountDrawer) {
 }
 
 // ==========================================
-// 16. FINALIZAR COMPRA (CON SUPABASE Y EMAILJS)
+// 16. FINALIZAR COMPRA (YAPE, PLIN, BCP, SUPABASE Y EMAILJS)
 // ==========================================
 
+const PAYMENT_INFO = {
+    "Yape": {
+        color: "#742284",
+        titulo: "Pago con Yape",
+        detalle: `
+            <p><strong>Número Yape:</strong> 900 159 211</p>
+            <p><strong>Titular:</strong> Omar Vidal Cabello Cajahuaman</p>
+            <p class="pay-note">Yapea el monto exacto y coloca tu correo abajo para enviarte tu código de seguimiento.</p>
+        `
+    },
+    "Plin": {
+        color: "#00b4d8",
+        titulo: "Pago con Plin",
+        detalle: `
+            <p><strong>Número Plin:</strong> 900 159 211</p>
+            <p><strong>Titular:</strong> Omar Vidal Cabello Cajahuaman</p>
+            <p class="pay-note">Plinea desde BBVA, Interbank, Scotiabank o BanBif y confirma tu pedido.</p>
+        `
+    },
+    "Transferencia Bancaria": {
+        color: "#0056cc",
+        titulo: "Transferencia Bancaria (BCP)",
+        detalle: `
+            <p><strong>Cuenta BCP Soles:</strong> 28097696046034</p>
+            <p><strong>CCI Interbancario:</strong> 00228019769604603463</p>
+            <p><strong>Titular:</strong> Omar Vidal Cabello Cajahuaman</p>
+            <p class="pay-note">Realiza la transferencia e indica el N° de operación si ya la efectuaste.</p>
+        `
+    }
+};
+
+let metodoSeleccionado = "Yape";
+
+const paymentModal = document.getElementById("payment-modal");
+const closePaymentBtn = document.getElementById("close-payment");
+const payModalTotal = document.getElementById("pay-modal-total");
+const payMethodDetails = document.getElementById("pay-method-details");
+const payTabs = document.querySelectorAll(".pay-tab");
+const paymentForm = document.getElementById("payment-form");
+const confirmPayBtn = document.getElementById("confirm-pay-btn");
 const checkoutBtn = document.getElementById("checkout-btn");
 
+function actualizarVistaMetodoPago(metodo) {
+    metodoSeleccionado = metodo;
+    const info = PAYMENT_INFO[metodo];
+    if (!payMethodDetails || !info) return;
+
+    payMethodDetails.style.borderLeft = `4px solid ${info.color}`;
+    payMethodDetails.innerHTML = `
+        <h4 style="color: ${info.color}; margin: 0 0 8px 0;">${info.titulo}</h4>
+        ${info.detalle}
+    `;
+
+    payTabs.forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.method === metodo);
+    });
+}
+
+payTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+        actualizarVistaMetodoPago(tab.dataset.method);
+    });
+});
+
+function togglePaymentModal(open) {
+    if (!paymentModal) return;
+    paymentModal.classList.toggle("open", open);
+    paymentModal.setAttribute("aria-hidden", open ? "false" : "true");
+}
+
+if (closePaymentBtn) {
+    closePaymentBtn.addEventListener("click", () => togglePaymentModal(false));
+}
+
+if (paymentModal) {
+    paymentModal.addEventListener("click", (e) => {
+        if (e.target.id === "payment-modal") {
+            togglePaymentModal(false);
+        }
+    });
+}
+
 if (checkoutBtn) {
-
-    checkoutBtn.addEventListener("click", async () => {
-
+    checkoutBtn.addEventListener("click", () => {
         if (!cart.length) {
             alert("Tu carrito está vacío.");
             return;
         }
 
-        // Pedir el correo al cliente (si ya escribió uno en Cuenta, lo toma como sugerencia)
+        const totalCompra = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+        if (payModalTotal) payModalTotal.textContent = money(totalCompra);
+
         const correoGuardado = document.getElementById("login-email")?.value || "";
-        const correoCliente = prompt("Ingresa tu correo electrónico para validar tu pedido y enviarte el código de seguimiento:", correoGuardado);
+        const payEmailInput = document.getElementById("pay-email");
+        if (payEmailInput && correoGuardado && !payEmailInput.value) {
+            payEmailInput.value = correoGuardado;
+        }
+
+        actualizarVistaMetodoPago("Yape");
+        toggleDrawer("cart-drawer", false);
+        togglePaymentModal(true);
+    });
+}
+
+if (paymentForm) {
+    paymentForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const correoCliente = document.getElementById("pay-email").value.trim();
+        const numOperacion = document.getElementById("pay-operation").value.trim();
 
         if (!correoCliente || !correoCliente.includes("@")) {
-            alert("Por favor, ingresa un correo electrónico válido para continuar.");
+            alert("Por favor, ingresa un correo electrónico válido.");
             return;
         }
 
-        // Cambiar texto del botón mientras procesa
-        checkoutBtn.disabled = true;
-        checkoutBtn.textContent = "Procesando...";
+        confirmPayBtn.disabled = true;
+        confirmPayBtn.textContent = "Registrando pedido...";
 
         try {
-            // 1. Generar código único y calcular total
             const codigoSeguimiento = "TECH-" + Math.floor(10000 + Math.random() * 90000);
             const totalCompra = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-            const detalleProductos = cart.map(item => `${item.name} (${money(item.price)})`).join(", ");
+            const textoOperacion = numOperacion ? ` | Op: ${numOperacion}` : "";
+            const infoPago = `Pago: ${metodoSeleccionado}${textoOperacion}`;
 
-            // 2. Guardar pedido en Supabase
+            const detalleProductos =
+                cart.map((item) => `${item.name} (${money(item.price)})`).join(", ") +
+                ` — [${infoPago}]`;
+
+            const productosConPago = [
+                ...cart,
+                { name: infoPago, price: 0 }
+            ];
+
+            // 1. Guardar pedido en Supabase
             const clienteDB = typeof supabase !== "undefined" ? supabase : window.supabaseClient;
-            
+
             if (clienteDB) {
                 const { error } = await clienteDB
                     .from("pedidos")
                     .insert([{
                         codigo_seguimiento: codigoSeguimiento,
                         cliente_correo: correoCliente,
-                        productos: cart,
+                        productos: productosConPago,
                         total: totalCompra,
                         estado: "Pendiente de validación"
                     }]);
@@ -721,15 +863,15 @@ if (checkoutBtn) {
                 if (error) {
                     console.error("Error Supabase:", error);
                     alert("No se pudo registrar el pedido en la base de datos.");
-                    checkoutBtn.disabled = false;
-                    checkoutBtn.textContent = "Finalizar compra";
+                    confirmPayBtn.disabled = false;
+                    confirmPayBtn.textContent = "Confirmar pedido";
                     return;
                 }
             }
 
-            // 3. Enviar correo de confirmación con EmailJS
+            // 2. Enviar correo de confirmación con EmailJS
             const urlBase = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
-            
+
             await emailjs.send("service_f66vzop", "template_7z7ykw4", {
                 to_email: correoCliente,
                 codigo_pedido: codigoSeguimiento,
@@ -738,24 +880,23 @@ if (checkoutBtn) {
                 link_seguimiento: `${urlBase}/seguimiento.html?codigo=${codigoSeguimiento}`
             }, "KDujWGiNqUOofc8D6");
 
-            // 4. Limpiar carrito y avisar al usuario
+            // 3. Limpiar carrito y cerrar modal
             cart = [];
             saveCart();
             renderCart();
-            toggleDrawer("cart-drawer", false);
+            paymentForm.reset();
+            togglePaymentModal(false);
 
-            alert(`¡Pedido confirmado!\n\nTu código de seguimiento es: ${codigoSeguimiento}\nHemos enviado los detalles y el enlace de rastreo a: ${correoCliente}`);
+            alert(`¡Pedido confirmado con ${metodoSeleccionado}!\n\nTu código de seguimiento es: ${codigoSeguimiento}\nHemos enviado los detalles y el enlace de rastreo a: ${correoCliente}`);
 
         } catch (err) {
             console.error("Error en el proceso:", err);
-            alert("Ocurrió un problema al enviar el correo. Verifica tu conexión.");
+            alert("Ocurrió un problema al procesar el pedido. Verifica tu conexión.");
         } finally {
-            checkoutBtn.disabled = false;
-            checkoutBtn.textContent = "Finalizar compra";
+            confirmPayBtn.disabled = false;
+            confirmPayBtn.textContent = "Confirmar pedido";
         }
-
     });
-
 }
 
 // ==========================================
