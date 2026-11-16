@@ -366,8 +366,8 @@ const drawersHTML = `
             <label for="pay-email">2. Tu correo electrónico (obligatorio) *</label>
             <input type="email" id="pay-email" placeholder="ejemplo@correo.com" required />
 
-            <label for="pay-operation">3. N° de operación / referencia (opcional)</label>
-            <input type="text" id="pay-operation" placeholder="Ej: 00458921" />
+            <label for="pay-screenshot">3. Adjuntar captura del pago (opcional)</label>
+            <input type="file" id="pay-screenshot" accept="image/*" />
 
             <button type="submit" class="btn-buy" id="confirm-pay-btn">
                 Confirmar pedido
@@ -709,7 +709,7 @@ if (accountDrawer) {
 }
 
 // ==========================================
-// 16. FINALIZAR COMPRA (YAPE, PLIN, BCP, SUPABASE Y EMAILJS)
+// 16. FINALIZAR COMPRA (YAPE, PLIN, BCP, CAPTURA, SUPABASE Y EMAILJS)
 // ==========================================
 
 const PAYMENT_INFO = {
@@ -719,7 +719,7 @@ const PAYMENT_INFO = {
         detalle: `
             <p><strong>Número Yape:</strong> 900 159 211</p>
             <p><strong>Titular:</strong> Omar Vidal Cabello Cajahuaman</p>
-            <p class="pay-note">Yapea el monto exacto y coloca tu correo abajo para enviarte tu código de seguimiento.</p>
+            <p class="pay-note">Yapea el monto exacto, adjunta tu captura y coloca tu correo para enviarte tu código.</p>
         `
     },
     "Plin": {
@@ -728,7 +728,7 @@ const PAYMENT_INFO = {
         detalle: `
             <p><strong>Número Plin:</strong> 900 159 211</p>
             <p><strong>Titular:</strong> Omar Vidal Cabello Cajahuaman</p>
-            <p class="pay-note">Plinea desde BBVA, Interbank, Scotiabank o BanBif y confirma tu pedido.</p>
+            <p class="pay-note">Plinea desde BBVA, Interbank, Scotiabank o BanBif y adjunta tu comprobante.</p>
         `
     },
     "Transferencia Bancaria": {
@@ -738,7 +738,7 @@ const PAYMENT_INFO = {
             <p><strong>Cuenta BCP Soles:</strong> 28097696046034</p>
             <p><strong>CCI Interbancario:</strong> 00228019769604603463</p>
             <p><strong>Titular:</strong> Omar Vidal Cabello Cajahuaman</p>
-            <p class="pay-note">Realiza la transferencia e indica el N° de operación si ya la efectuaste.</p>
+            <p class="pay-note">Realiza la transferencia y adjunta la captura de constancia.</p>
         `
     }
 };
@@ -821,7 +821,7 @@ if (paymentForm) {
         e.preventDefault();
 
         const correoCliente = document.getElementById("pay-email").value.trim();
-        const numOperacion = document.getElementById("pay-operation").value.trim();
+        const archivoCaptura = document.getElementById("pay-screenshot").files[0];
 
         if (!correoCliente || !correoCliente.includes("@")) {
             alert("Por favor, ingresa un correo electrónico válido.");
@@ -829,26 +829,52 @@ if (paymentForm) {
         }
 
         confirmPayBtn.disabled = true;
-        confirmPayBtn.textContent = "Registrando pedido...";
+        confirmPayBtn.textContent = archivoCaptura ? "Subiendo captura..." : "Registrando pedido...";
 
         try {
             const codigoSeguimiento = "TECH-" + Math.floor(10000 + Math.random() * 90000);
             const totalCompra = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-            const textoOperacion = numOperacion ? ` | Op: ${numOperacion}` : "";
-            const infoPago = `Pago: ${metodoSeleccionado}${textoOperacion}`;
+            const clienteDB = typeof supabase !== "undefined" ? supabase : window.supabaseClient;
 
+            let urlCaptura = "";
+
+            // 1. Si el cliente adjuntó captura, subirla a Supabase Storage
+            if (archivoCaptura && clienteDB) {
+                const extension = archivoCaptura.name.split(".").pop() || "png";
+                const nombreArchivo = `${codigoSeguimiento}-${Date.now()}.${extension}`;
+
+                const { error: uploadError } = await clienteDB.storage
+                    .from("comprobantes")
+                    .upload(nombreArchivo, archivoCaptura);
+
+                if (uploadError) {
+                    console.error("Error subiendo captura:", uploadError);
+                    alert("No se pudo subir la imagen del comprobante. Verifica el bucket en Supabase.");
+                    confirmPayBtn.disabled = false;
+                    confirmPayBtn.textContent = "Confirmar pedido";
+                    return;
+                }
+
+                const { data: publicUrlData } = clienteDB.storage
+                    .from("comprobantes")
+                    .getPublicUrl(nombreArchivo);
+
+                urlCaptura = publicUrlData.publicUrl;
+            }
+
+            const infoPago = `Pago: ${metodoSeleccionado}`;
             const detalleProductos =
                 cart.map((item) => `${item.name} (${money(item.price)})`).join(", ") +
                 ` — [${infoPago}]`;
 
             const productosConPago = [
                 ...cart,
-                { name: infoPago, price: 0 }
+                { name: infoPago, price: 0, voucher_url: urlCaptura }
             ];
 
-            // 1. Guardar pedido en Supabase
-            const clienteDB = typeof supabase !== "undefined" ? supabase : window.supabaseClient;
+            const estadoInicial = urlCaptura ? "Comprobante enviado" : "Pendiente de validación";
 
+            // 2. Guardar pedido en Supabase
             if (clienteDB) {
                 const { error } = await clienteDB
                     .from("pedidos")
@@ -857,7 +883,7 @@ if (paymentForm) {
                         cliente_correo: correoCliente,
                         productos: productosConPago,
                         total: totalCompra,
-                        estado: "Pendiente de validación"
+                        estado: estadoInicial
                     }]);
 
                 if (error) {
@@ -869,7 +895,7 @@ if (paymentForm) {
                 }
             }
 
-            // 2. Enviar correo de confirmación con EmailJS
+            // 3. Enviar correo de confirmación con EmailJS
             const urlBase = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
 
             await emailjs.send("service_f66vzop", "template_7z7ykw4", {
@@ -880,7 +906,7 @@ if (paymentForm) {
                 link_seguimiento: `${urlBase}/seguimiento.html?codigo=${codigoSeguimiento}`
             }, "KDujWGiNqUOofc8D6");
 
-            // 3. Limpiar carrito y cerrar modal
+            // 4. Limpiar carrito y cerrar modal
             cart = [];
             saveCart();
             renderCart();

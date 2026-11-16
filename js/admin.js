@@ -8,6 +8,7 @@ const logoutBtn = document.getElementById("logout-btn");
 
 const ESTADOS_PEDIDO = [
     "Pendiente de validación",
+    "Comprobante enviado",
     "Pago validado",
     "En camino",
     "Entregado",
@@ -15,8 +16,6 @@ const ESTADOS_PEDIDO = [
 ];
 
 async function inicializarPanel() {
-
-    // 1. Comprobar si existe una sesión
     const { data: sessionData, error: sessionError } =
         await supabase.auth.getSession();
 
@@ -25,7 +24,6 @@ async function inicializarPanel() {
         return;
     }
 
-    // 2. Comprobar si el usuario es administrador
     const { data: admin, error: adminError } = await supabase
         .from("admin_users")
         .select("user_id")
@@ -40,7 +38,6 @@ async function inicializarPanel() {
         return;
     }
 
-    // Cargar pedidos y mensajes en paralelo
     await Promise.all([cargarPedidos(), cargarMensajes()]);
 }
 
@@ -81,12 +78,44 @@ async function cargarPedidos() {
         tdCorreo.textContent = pedido.cliente_correo || "";
         fila.appendChild(tdCorreo);
 
-        // Productos
+        // Productos + botón Ver captura si existe
         const tdProductos = document.createElement("td");
-        const lista = Array.isArray(pedido.productos)
-            ? pedido.productos.map(p => `${p.name} (S/ ${Number(p.price).toFixed(2)})`).join(", ")
-            : "";
-        tdProductos.textContent = lista;
+        let voucherUrl = "";
+
+        if (Array.isArray(pedido.productos)) {
+            const textos = [];
+            pedido.productos.forEach((p) => {
+                if (p.voucher_url) {
+                    voucherUrl = p.voucher_url;
+                }
+                if (Number(p.price) > 0) {
+                    textos.push(`${p.name} (S/ ${Number(p.price).toFixed(2)})`);
+                } else {
+                    textos.push(`<strong>${p.name}</strong>`);
+                }
+            });
+            tdProductos.innerHTML = textos.join("<br>");
+        }
+
+        if (voucherUrl) {
+            const linkVoucher = document.createElement("a");
+            linkVoucher.href = voucherUrl;
+            linkVoucher.target = "_blank";
+            linkVoucher.rel = "noopener";
+            linkVoucher.textContent = "📎 Ver captura";
+            linkVoucher.style.display = "inline-block";
+            linkVoucher.style.marginTop = "6px";
+            linkVoucher.style.padding = "4px 10px";
+            linkVoucher.style.background = "#0077ff";
+            linkVoucher.style.color = "#ffffff";
+            linkVoucher.style.borderRadius = "6px";
+            linkVoucher.style.fontSize = "12px";
+            linkVoucher.style.fontWeight = "600";
+            linkVoucher.style.textDecoration = "none";
+            tdProductos.appendChild(document.createElement("br"));
+            tdProductos.appendChild(linkVoucher);
+        }
+
         fila.appendChild(tdProductos);
 
         // Total
@@ -102,18 +131,14 @@ async function cargarPedidos() {
         badge.style.borderRadius = "6px";
         badge.style.fontWeight = "bold";
         badge.style.fontSize = "13px";
-        badge.style.background = pedido.estado === "Entregado" ? "#e8f5e9" : "#e0f7fa";
-        badge.style.color = pedido.estado === "Entregado" ? "#2e7d32" : "#006064";
+        badge.style.background = pedido.estado === "Entregado" || pedido.estado === "Pago validado" ? "#e8f5e9" : "#e0f7fa";
+        badge.style.color = pedido.estado === "Entregado" || pedido.estado === "Pago validado" ? "#2e7d32" : "#006064";
         tdEstado.appendChild(badge);
         fila.appendChild(tdEstado);
 
         // Selector para cambiar estado
         const tdAccion = document.createElement("td");
         const select = document.createElement("select");
-        select.style.padding = "6px 10px";
-        select.style.borderRadius = "6px";
-        select.style.border = "1px solid #ccc";
-        select.style.cursor = "pointer";
 
         ESTADOS_PEDIDO.forEach((estadoOpcion) => {
             const option = document.createElement("option");
@@ -138,15 +163,15 @@ async function cargarPedidos() {
 
             if (updateError) {
                 console.error("Error al actualizar estado:", updateError);
-                alert("No se pudo actualizar el estado. Verifica las políticas RLS (UPDATE) en Supabase.");
+                alert("No se pudo actualizar el estado.");
                 select.value = pedido.estado;
                 return;
             }
 
             pedido.estado = nuevoEstado;
             badge.textContent = nuevoEstado;
-            badge.style.background = nuevoEstado === "Entregado" ? "#e8f5e9" : "#e0f7fa";
-            badge.style.color = nuevoEstado === "Entregado" ? "#2e7d32" : "#006064";
+            badge.style.background = nuevoEstado === "Entregado" || nuevoEstado === "Pago validado" ? "#e8f5e9" : "#e0f7fa";
+            badge.style.color = nuevoEstado === "Entregado" || nuevoEstado === "Pago validado" ? "#2e7d32" : "#006064";
         });
 
         tdAccion.appendChild(select);
@@ -182,7 +207,6 @@ async function cargarMensajes() {
         `Se encontraron ${data.length} mensajes.`;
 
     data.forEach((mensaje) => {
-
         const fila = document.createElement("tr");
 
         const valores = [
@@ -204,7 +228,6 @@ async function cargarMensajes() {
 
 // Cerrar sesión
 logoutBtn.addEventListener("click", async () => {
-
     const { error } = await supabase.auth.signOut();
 
     if (error) {
