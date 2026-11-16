@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Pedido | TECHSTORE</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+    <!-- Encabezado automático desde js/main.js -->
+    <div id="site-header"></div>
+
+    <main style="max-width: 550px; margin: 60px auto; padding: 30px 20px; text-align: center; min-height: 55vh;">
+        <h1>Rastrea tu Pedido</h1>
+        <p style="margin-bottom: 20px; color: #555;">
+            Ingresa el código de seguimiento que enviamos a tu correo electrónico.
+        </p>
+
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 30px;">
+            <input type="text" id="codigo-input" placeholder="Ej: TECH-48291" 
+                   style="padding: 12px; width: 65%; border: 1px solid #ccc; border-radius: 8px; font-size: 16px;">
+            <button id="btn-rastrear" class="btn-buy" style="width: auto; padding: 12px 24px;">
+                Buscar
+            </button>
+        </div>
+
+        <div id="resultado-pedido"></div>
+    </main>
+
+    <!-- Pie de página y ventanas laterales automáticas -->
+    <div id="site-footer"></div>
+    <div id="site-drawers"></div>
+
+    <!-- Scripts en el orden correcto -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="js/main.js"></script>
+    <script type="module" src="js/supabase.js"></script>
+    <script src="js/theme.js"></script>
+
+    <!-- Lógica de búsqueda conectada directamente a tu js/supabase.js -->
+    <script type="module">
+        import { supabase } from "./js/supabase.js";
+
+        const btnRastrear = document.getElementById("btn-rastrear");
+        const inputCodigo = document.getElementById("codigo-input");
+        const divResultado = document.getElementById("resultado-pedido");
+
+        async function buscarPedido() {
+            const codigo = inputCodigo.value.trim().toUpperCase();
+            if (!codigo) {
+                alert("Por favor, ingresa un código de seguimiento.");
+                return;
+            }
+
+            divResultado.innerHTML = "<p>Buscando pedido...</p>";
+
+            const { data, error } = await supabase
+                .from("pedidos")
+                .select("*")
+                .eq("codigo_seguimiento", codigo)
+                .single();
+
+            if (error || !data) {
+                divResultado.innerHTML = `<p style="color: #d32f2f; font-weight: bold;">No encontramos ningún pedido con el código "${codigo}". Verifica que esté bien escrito.</p>`;
+                return;
+            }
+
+            const listaProductos = data.productos
+                .map(p => `<li>${p.name} - S/ ${Number(p.price).toFixed(2)}</li>`)
+                .join("");
+
+            divResultado.innerHTML = `
+                <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 24px; text-align: left; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top: 0; color: #0066cc;">Pedido: ${data.codigo_seguimiento}</h3>
+                    <p><strong>Estado actual:</strong> <span style="background: #e0f7fa; color: #006064; padding: 4px 10px; border-radius: 6px; font-weight: bold;">${data.estado}</span></p>
+                    <p><strong>Correo registrado:</strong> ${data.cliente_correo}</p>
+                    <p><strong>Productos:</strong></p>
+                    <ul style="margin-top: 5px; padding-left: 20px;">${listaProductos}</ul>
+                    <p style="font-size: 18px; margin-bottom: 0; border-top: 1px solid #eee; padding-top: 10px;">
+                        <strong>Total: S/ ${Number(data.total).toFixed(2)}</strong>
+                    </p>
+                </div>
+            `;
+        }
+
+        btnRastrear.addEventListener("click", buscarPedido);
+
+        // Permite buscar también presionando Enter
+        inputCodigo.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") buscarPedido();
+        });
+
+        // Si el cliente abre el enlace desde su correo (?codigo=TECH-XXXXX), lo busca solo
+        const urlParams = new URLSearchParams(window.location.search);
+        const codigoUrl = urlParams.get("codigo");
+        if (codigoUrl) {
+            inputCodigo.value = codigoUrl;
+            buscarPedido();
+        }
+    </script>
+</body>
+</html>

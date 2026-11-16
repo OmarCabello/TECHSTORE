@@ -1,4 +1,3 @@
-
 // ==========================================
 // TECHSTORE - ARCHIVO PRINCIPAL
 // ==========================================
@@ -125,6 +124,7 @@ const headerHTML = `
             <a href="index.html" class="nav-link">Inicio</a>
             <a href="productos.html" class="nav-link">Productos</a>
             <a href="ofertas.html" class="nav-link">Ofertas</a>
+            <a href="seguimiento.html" class="nav-link">Seguimiento</a>
             <a href="contactos.html" class="nav-link">Contactos</a>
         </nav>
 
@@ -671,28 +671,88 @@ if (accountDrawer) {
 }
 
 // ==========================================
-// 16. FINALIZAR COMPRA
+// 16. FINALIZAR COMPRA (CON SUPABASE Y EMAILJS)
 // ==========================================
 
 const checkoutBtn = document.getElementById("checkout-btn");
 
 if (checkoutBtn) {
 
-    checkoutBtn.addEventListener("click", () => {
+    checkoutBtn.addEventListener("click", async () => {
 
         if (!cart.length) {
+            alert("Tu carrito está vacío.");
             return;
         }
 
-        cart = [];
+        // Pedir el correo al cliente (si ya escribió uno en Cuenta, lo toma como sugerencia)
+        const correoGuardado = document.getElementById("login-email")?.value || "";
+        const correoCliente = prompt("Ingresa tu correo electrónico para validar tu pedido y enviarte el código de seguimiento:", correoGuardado);
 
-        saveCart();
+        if (!correoCliente || !correoCliente.includes("@")) {
+            alert("Por favor, ingresa un correo electrónico válido para continuar.");
+            return;
+        }
 
-        renderCart();
+        // Cambiar texto del botón mientras procesa
+        checkoutBtn.disabled = true;
+        checkoutBtn.textContent = "Procesando...";
 
-        alert("Gracias por tu compra en TECHSTORE.");
+        try {
+            // 1. Generar código único y calcular total
+            const codigoSeguimiento = "TECH-" + Math.floor(10000 + Math.random() * 90000);
+            const totalCompra = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+            const detalleProductos = cart.map(item => `${item.name} (${money(item.price)})`).join(", ");
 
-        toggleDrawer("cart-drawer", false);
+            // 2. Guardar pedido en Supabase
+            const clienteDB = typeof supabase !== "undefined" ? supabase : window.supabaseClient;
+            
+            if (clienteDB) {
+                const { error } = await clienteDB
+                    .from("pedidos")
+                    .insert([{
+                        codigo_seguimiento: codigoSeguimiento,
+                        cliente_correo: correoCliente,
+                        productos: cart,
+                        total: totalCompra,
+                        estado: "Pendiente de validación"
+                    }]);
+
+                if (error) {
+                    console.error("Error Supabase:", error);
+                    alert("No se pudo registrar el pedido en la base de datos.");
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.textContent = "Finalizar compra";
+                    return;
+                }
+            }
+
+            // 3. Enviar correo de confirmación con EmailJS
+            const urlBase = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
+            
+            await emailjs.send("service_f66vzop", "template_7z7ykw4", {
+                to_email: correoCliente,
+                codigo_pedido: codigoSeguimiento,
+                detalle: detalleProductos,
+                total: money(totalCompra),
+                link_seguimiento: `${urlBase}/seguimiento.html?codigo=${codigoSeguimiento}`
+            }, "KDujWGiNqUOofc8D6");
+
+            // 4. Limpiar carrito y avisar al usuario
+            cart = [];
+            saveCart();
+            renderCart();
+            toggleDrawer("cart-drawer", false);
+
+            alert(`¡Pedido confirmado!\n\nTu código de seguimiento es: ${codigoSeguimiento}\nHemos enviado los detalles y el enlace de rastreo a: ${correoCliente}`);
+
+        } catch (err) {
+            console.error("Error en el proceso:", err);
+            alert("Ocurrió un problema al enviar el correo. Verifica tu conexión.");
+        } finally {
+            checkoutBtn.disabled = false;
+            checkoutBtn.textContent = "Finalizar compra";
+        }
 
     });
 

@@ -16,7 +16,7 @@ export const supabase = createClient(
     SUPABASE_URL,
     SUPABASE_KEY
 );
-
+window.supabase = supabase;
 console.log("TECHSTORE: cliente Supabase inicializado");
 
 // ======================================
