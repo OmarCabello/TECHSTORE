@@ -4,34 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrativo | TECHSTORE</title>
-
     <link rel="stylesheet" href="css/styles.css">
 </head>
 
-<body>
+<body class="admin-body">
 
-    <main class="page admin-panel">
-        <div class="container">
+    <header class="admin-topbar">
+        <div class="admin-topbar-brand">
+            <h1>TECHSTORE ADMIN</h1>
+            <p>Panel de control y gestión de tienda</p>
+        </div>
 
-            <div class="admin-heading">
+        <div class="admin-topbar-actions">
+            <a href="index.html" class="admin-btn-store">Ver tienda</a>
+            <button id="logout-btn" class="admin-btn-logout">Cerrar sesión</button>
+        </div>
+    </header>
+
+    <main class="admin-container">
+
+        <!-- SECCIÓN 1: GESTIÓN DE PEDIDOS -->
+        <section class="admin-card">
+            <div class="admin-card-header">
                 <div>
-                    <h1>Panel de administración</h1>
-                    <p>Bienvenido a TECHSTORE</p>
+                    <h2>Pedidos recibidos</h2>
+                    <p>Actualiza el estado de cada compra para que tus clientes lo vean en tiempo real.</p>
                 </div>
-
-                <button id="logout-btn" class="btn-logout">
-                    Cerrar sesión
-                </button>
+                <span id="orders-status" class="admin-status-pill">Cargando pedidos...</span>
             </div>
 
-            <!-- SECCIÓN 1: GESTIÓN DE PEDIDOS -->
-            <h2>Pedidos recibidos</h2>
-            <p>Actualiza el estado de cada compra para que tus clientes lo vean en seguimiento.</p>
-
-            <p id="orders-status">Cargando pedidos...</p>
-
-            <div class="table-container" style="margin-bottom: 40px;">
-                <table class="messages-table">
+            <div class="admin-table-container">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -42,19 +45,23 @@
                             <th>Cambiar estado</th>
                         </tr>
                     </thead>
-
                     <tbody id="orders-body"></tbody>
                 </table>
             </div>
+        </section>
 
-            <!-- SECCIÓN 2: MENSAJES RECIBIDOS -->
-            <h2>Mensajes recibidos</h2>
-            <p>Registro de mensajes enviados por nuestros clientes.</p>
+        <!-- SECCIÓN 2: MENSAJES RECIBIDOS -->
+        <section class="admin-card">
+            <div class="admin-card-header">
+                <div>
+                    <h2>Mensajes recibidos</h2>
+                    <p>Consultas y mensajes enviados desde el formulario de contacto.</p>
+                </div>
+                <span id="admin-status" class="admin-status-pill">Cargando mensajes...</span>
+            </div>
 
-            <p id="admin-status">Cargando mensajes...</p>
-
-            <div class="table-container">
-                <table class="messages-table">
+            <div class="admin-table-container">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Nombre</th>
@@ -63,12 +70,11 @@
                             <th>Fecha</th>
                         </tr>
                     </thead>
-
                     <tbody id="messages-body"></tbody>
                 </table>
             </div>
+        </section>
 
-        </div>
     </main>
 
     <script type="module" src="js/admin.js"></script>
