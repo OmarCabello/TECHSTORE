@@ -23,7 +23,68 @@
 
     <main class="admin-container">
 
-        <!-- SECCIÓN 1: GESTIÓN DE PEDIDOS -->
+        <!-- SECCIÓN 1: GESTIÓN DE PRODUCTOS Y OFERTAS -->
+        <section class="admin-card">
+            <div class="admin-card-header">
+                <div>
+                    <h2>Gestión de Productos y Ofertas</h2>
+                    <p>Publica laptops, PC o accesorios nuevos y márcalos como oferta cuando quieras.</p>
+                </div>
+                <span id="products-status" class="admin-status-pill">Cargando catálogo...</span>
+            </div>
+
+            <form id="add-product-form" class="admin-product-form">
+                <div class="admin-form-grid">
+                    <div>
+                        <label for="prod-name">Nombre del equipo *</label>
+                        <input type="text" id="prod-name" placeholder="Ej: Laptop Gamer ASUS TUF" required />
+                    </div>
+
+                    <div>
+                        <label for="prod-price">Precio actual (S/) *</label>
+                        <input type="number" step="0.01" id="prod-price" placeholder="Ej: 3499.90" required />
+                    </div>
+
+                    <div>
+                        <label for="prod-old">Precio anterior tachado (opcional)</label>
+                        <input type="number" step="0.01" id="prod-old" placeholder="Ej: 3899.90" />
+                    </div>
+
+                    <div>
+                        <label for="prod-img">Foto del equipo *</label>
+                        <input type="file" id="prod-img" accept="image/*" required />
+                    </div>
+                </div>
+
+                <div class="admin-form-footer">
+                    <label class="admin-checkbox">
+                        <input type="checkbox" id="prod-offer" />
+                        <span>Mostrar también en la sección <strong>Ofertas</strong></span>
+                    </label>
+
+                    <button type="submit" id="save-prod-btn" class="admin-btn-primary">
+                        + Publicar producto
+                    </button>
+                </div>
+            </form>
+
+            <div class="admin-table-container" style="margin-top: 20px;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Imagen</th>
+                            <th>Equipo</th>
+                            <th>Precio</th>
+                            <th>Tipo</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-products-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: GESTIÓN DE PEDIDOS -->
         <section class="admin-card">
             <div class="admin-card-header">
                 <div>
@@ -50,7 +111,7 @@
             </div>
         </section>
 
-        <!-- SECCIÓN 2: MENSAJES RECIBIDOS -->
+        <!-- SECCIÓN 3: MENSAJES RECIBIDOS -->
         <section class="admin-card">
             <div class="admin-card-header">
                 <div>

@@ -941,41 +941,57 @@ if (menuBtn && nav) {
 }
 
 // ==========================================
-// 18. FILTRAR PRODUCTOS DESDE EL BUSCADOR
+// 18 Y 19. CARGAR PRODUCTOS DE SUPABASE E INICIALIZAR TIENDA
 // ==========================================
 
-const params = new URLSearchParams(location.search);
+async function cargarProductosDinamicos() {
+    const clienteDB = typeof supabase !== "undefined" ? supabase : window.supabaseClient;
 
-const q = (params.get("q") || "")
-    .trim()
-    .toLowerCase();
+    if (clienteDB) {
+        try {
+            const { data, error } = await clienteDB
+                .from("productos")
+                .select("*")
+                .order("id", { ascending: false });
 
-if (document.getElementById("product-grid")) {
-
-    const list = q
-        ? products.filter((p) =>
-            p.name.toLowerCase().includes(q)
-        )
-        : products;
-
-    renderProducts(list);
-
-    if (q) {
-
-        const searchInput = document.getElementById("search-input");
-
-        if (searchInput) {
-            searchInput.value = params.get("q");
+            if (!error && Array.isArray(data) && data.length > 0) {
+                const extras = data.map((item) => ({
+                    id: `db-${item.id}`,
+                    name: item.name,
+                    price: Number(item.price),
+                    old: item.old ? Number(item.old) : null,
+                    offer: Boolean(item.offer),
+                    img: item.img
+                }));
+                products.unshift(...extras);
+            }
+        } catch (err) {
+            console.error("Error cargando productos extra:", err);
         }
     }
+
+    const params = new URLSearchParams(location.search);
+    const q = (params.get("q") || "").trim().toLowerCase();
+
+    if (document.getElementById("product-grid")) {
+        const list = q
+            ? products.filter((p) => p.name.toLowerCase().includes(q))
+            : products;
+
+        renderProducts(list);
+
+        if (q) {
+            const searchInput = document.getElementById("search-input");
+            if (searchInput) {
+                searchInput.value = params.get("q");
+            }
+        }
+    }
+
+    renderOffers();
+    renderCart();
 }
 
-// ==========================================
-// 19. INICIALIZAR TIENDA
-// ==========================================
-
-renderOffers();
-
-renderCart();
+cargarProductosDinamicos();
 
 console.log("TECHSTORE: página inicializada correctamente");
